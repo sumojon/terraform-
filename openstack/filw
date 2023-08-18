@@ -1,4 +1,52 @@
-echo enter a and b.
-read a b.
-c=`expr $a + $b`
-echo $c.
+pipeline { 
+    agent any 
+    
+    stages{
+        stage (" Git Checkout ") {
+            
+            steps {
+                
+                git credentialsId: '2bc3c20f-1fa5-446f-bdd8-4176399d22c2', url: 'https://github.com/sumojon/terraform-.git'
+                
+            }
+            
+        }
+    
+        
+        stage (" Maven build") {
+            
+            steps {
+                
+                  sh "mvn clean package "
+                  sh "mv target/*.war target/myweb.war"
+                  
+                
+            }
+            }
+            
+            stage ("deploy-dev") {
+                steps {
+                    
+                 
+                   sshagent(['tomcat-new']) {
+                        
+                        sh """
+                        
+                        scp -o StrictHostKeyChecking-no target/myweb.war ec2-user@54.198.134.193:/home/ec2-user/apache-tomcat-9.0.79/webapps/
+                        
+                        ssh ec2-user@54.198.134.193 /home/ec2-user/apache-tomcat-9.0.79/bin/shutdown.sh
+                        
+                        ssh ec2-user@54.198.134.193 /home/ec2-user/apache-tomcat-9.0.79/bin/start.sh
+                        
+                        """
+                        
+                    }
+                    
+                    }
+               }
+           
+    }
+    
+}   
+
+
